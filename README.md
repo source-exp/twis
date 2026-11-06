@@ -6,7 +6,7 @@ A small Twitter/X-inspired social feed built with React and Vite, styled like a 
 
 - Registration and sign-in screens with session persistence
 - PBKDF2/SHA-256 password hashing through the Web Crypto API
-- Seeded demo users and realistic sample posts
+- User-created posts and profiles
 - Create posts up to 280 characters, like, follow, and delete your own posts
 - Profile editing with post, follower, and following stats
 - Explore search and trending topics
@@ -34,7 +34,7 @@ npm run preview
 
 This project has no server: `src/db.js` is a localStorage database and the active session is stored in the browser. Passwords are never stored as plaintext; new passwords are salted and hashed with PBKDF2 before storage, and React escapes rendered post content. This is appropriate for a local prototype only. For production, move users, sessions, posts, authorization, rate limiting, CSRF protection, and password hashing to a server (prefer Argon2id or bcrypt), use secure HttpOnly cookies, and validate every request server-side.
 
-Demo account: `maya@example.com` / `demo-password`. You can also register a new account.
+Register a new account to use the app.
 
 ## File structure
 

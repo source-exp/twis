@@ -1,40 +1,14 @@
-const DB_KEY = 'twis-db-v2'
+const DB_KEY = 'twis-db-v3'
 const SESSION_KEY = 'twis-session-v2'
 
-const demoUsers = [
-  { id: 'u-maya', name: 'Maya Chen', handle: 'mayachen', email: 'maya@example.com', passwordHash: 'AAAAAAAAAAAAAAAAAAAAAA==:UfYvpOhE+sKYT+kndq81CTHnGtCsrM/CYxg3JLxLrVg=', avatar: 'MC', bio: 'Product designer making tools for thoughtful teams.' },
-  { id: 'u-jon', name: 'Jon Bell', handle: 'jonbell', avatar: 'JB', bio: 'Writer, builder, and occasional espresso critic.' },
-  { id: 'u-priya', name: 'Priya Shah', handle: 'priyashah', avatar: 'PS', bio: 'Indie hacker learning in public.' },
-  { id: 'u-lena', name: 'Lena Ortiz', handle: 'lenaortiz', avatar: 'LO', bio: 'Frontend engineer. CSS is my favorite puzzle.' },
-  { id: 'u-theo', name: 'Theo Grant', handle: 'theogrant', avatar: 'TG', bio: 'Photographer and weekend cyclist.' },
-  { id: 'u-sam', name: 'Sam Rivera', handle: 'samrivera', avatar: 'SR', bio: 'Community, coffee, and good questions.' },
-]
-
-const demoPosts = [
-  { id: 'p-1', userId: 'u-maya', body: 'The best ideas usually start as tiny experiments. Ship the first version, learn from it, and keep going. ✨', createdAt: Date.now() - 18 * 60000, replies: 12, reposts: 28, likes: 184 },
-  { id: 'p-2', userId: 'u-jon', body: 'A reminder that a clear desk is not the same thing as a clear mind. Take the walk, make the coffee, start again.', createdAt: Date.now() - 42 * 60000, replies: 7, reposts: 14, likes: 96 },
-  { id: 'p-3', userId: 'u-priya', body: 'What are you building this weekend?', createdAt: Date.now() - 60 * 60000, replies: 24, reposts: 5, likes: 61 },
-  { id: 'p-4', userId: 'u-lena', body: 'A small interface with a strong point of view is better than a huge interface trying to please everyone.', createdAt: Date.now() - 2 * 3600000, replies: 9, reposts: 19, likes: 122 },
-]
-
-const demoMessages = [
-  { id: 'm-1', from: 'u-lena', to: 'u-maya', body: 'Did you see the new prototype?', createdAt: Date.now() - 2 * 60000, seen: false },
-  { id: 'm-2', from: 'u-jon', to: 'u-maya', body: 'Coffee and a walk this weekend?', createdAt: Date.now() - 3600000, seen: true },
-  { id: 'm-3', from: 'u-sam', to: 'u-maya', body: 'Welcome to twis!', createdAt: Date.now() - 3 * 3600000, seen: true },
-]
-
-const demoAlerts = [
-  { id: 'a-1', actorId: 'u-maya', recipientId: 'u-maya', type: 'like', text: 'liked your post', createdAt: Date.now() - 600000, seen: false },
-  { id: 'a-2', actorId: 'u-priya', recipientId: 'u-maya', type: 'follow', text: 'followed you', createdAt: Date.now() - 3600000, seen: false },
-  { id: 'a-3', actorId: 'u-jon', recipientId: 'u-maya', type: 'repost', text: 'reposted your update', createdAt: Date.now() - 3 * 3600000, seen: true },
-]
+const emptyDatabase = { users: [], posts: [], likes: [], follows: [], bookmarks: [], messages: [], alerts: [] }
 
 function readDb() {
   try {
     const stored = JSON.parse(localStorage.getItem(DB_KEY))
-    return stored ? { bookmarks: [], messages: demoMessages, alerts: demoAlerts, ...stored } : { users: demoUsers, posts: demoPosts, likes: [], follows: [], bookmarks: [], messages: demoMessages, alerts: demoAlerts }
+    return stored ? { ...emptyDatabase, ...stored } : { ...emptyDatabase }
   } catch {
-    return { users: demoUsers, posts: demoPosts, likes: [], follows: [], bookmarks: [], messages: demoMessages, alerts: demoAlerts }
+    return { ...emptyDatabase }
   }
 }
 
@@ -44,7 +18,7 @@ function writeDb(db) {
 }
 
 export function seedDatabase() {
-  if (!localStorage.getItem(DB_KEY)) writeDb({ users: demoUsers, posts: demoPosts, likes: [], follows: [], bookmarks: [], messages: demoMessages, alerts: demoAlerts })
+  if (!localStorage.getItem(DB_KEY)) writeDb({ ...emptyDatabase })
 }
 
 export function getDatabase() {

@@ -1,10 +1,9 @@
 import { StrictMode, useEffect, useMemo, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { clearSession, createUser, addPost, deletePost, findUserByEmail, findUserByHandle, getDatabase, getSessionUser, isBookmarked, isFollowing, markAlertSeen, markAllAlertsSeen, markMessageSeen, saveSession, seedDatabase, toggleBookmark, toggleFollow, toggleLike, updateUser } from './db'
+import { clearSession, createUser, addPost, deletePost, findUserByEmail, findUserByHandle, getDatabase, getSessionUser, isBookmarked, markAlertSeen, markAllAlertsSeen, markMessageSeen, saveSession, seedDatabase, toggleBookmark, toggleLike, updateUser } from './db'
 import { hashPassword, validateRegistration, verifyPassword } from './auth'
 import './styles.css'
 
-const trends = [['#BuildInPublic', '8,420 posts'], ['Design systems', '5,104 posts'], ['Indie hackers', '3,892 posts']]
 const icon = { home: '⌂', search: '⌕', bell: '♧', mail: '✉', bookmark: '▣', user: '☻', more: '•••', reply: '↩', repost: '↻', heart: '♥', share: '↗', image: '▧', video: '▶', audio: '♫', gif: 'GIF' }
 const formatTime = (time) => { const minutes = Math.max(1, Math.floor((Date.now() - time) / 60000)); return minutes < 60 ? `${minutes}m` : `${Math.floor(minutes / 60)}h` }
 const Avatar = ({ initials }) => <div className="avatar">{initials}</div>
@@ -97,7 +96,7 @@ function AuthScreen({ onLogin }) {
         <button className="xp-button primary" disabled={busy}>{busy ? 'Creating…' : mode === 'login' ? 'Sign in' : 'Register'}</button>
       </form>
       <button className="link-button" onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError('') }}>{mode === 'login' ? 'Create a new account' : 'Already have an account? Sign in'}</button>
-      <p className="demo-note">Demo accounts: <b>maya@example.com</b> / <b>demo-password</b> or register your own.</p>
+      <p className="demo-note">Register an account to start sharing with the community.</p>
     </div>
   </main>
 }
@@ -115,19 +114,13 @@ function App() {
     seedDatabase()
     const database = getDatabase()
     const current = getSessionUser()
-    // Development convenience only: production still requires an explicit login.
-    const developmentUser = import.meta.env.DEV && !current
-      ? database.users.find((item) => item.email === 'maya@example.com')
-      : null
-    if (developmentUser) saveSession(developmentUser.id)
     setDb(database)
-    setUser(current || developmentUser)
+    setUser(current)
   }, [])
   const refresh = () => setDb(getDatabase())
   const posts = useMemo(() => db.posts.filter((post) => postMatches(post, db, query)), [db, query])
   const add = (event) => { event.preventDefault(); const body = draft.trim(); if ((!body && !media) || !user) return; addPost({ id: `p-${crypto.randomUUID()}`, userId: user.id, body, media, createdAt: Date.now(), replies: 0, reposts: 0, likes: 0 }); setDraft(''); setMedia(null); refresh() }
   if (!user) return <AuthScreen onLogin={(nextUser) => { setUser(nextUser); refresh() }} />
-  const suggestions = db.users.filter((item) => item.id !== user.id).slice(3, 6)
   return <div className="desktop">
     <aside className="start-menu"><div className="window-title"><span>twis</span><span>— □ ×</span></div><div className="brand">tw<span>i</span>s</div>
       <nav>{[['Home', 'home'], ['Explore', 'search'], ['Alerts', 'bell'], ['Messages', 'mail'], ['Bookmarks', 'bookmark'], ['Profile', 'user']].map(([label, name]) => <button className={`nav-item ${activeNav === label ? 'active' : ''}`} onClick={() => { setActiveNav(label); setViewProfile(label === 'Profile' ? user : null) }} key={label}><ButtonIcon name={name} />{label}{label === 'Alerts' && db.alerts.some((alert) => alert.recipientId === user.id && !alert.seen) && <i className="nav-badge">!</i>}</button>)}</nav>
@@ -137,13 +130,12 @@ function App() {
       <div className="toolbar"><span>File</span><span>Edit</span><span>View</span><span>Help</span><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find posts..." /></div>
       <header className="feed-header"><h1>{activeNav}</h1><span className="online">● {db.users.length} users online</span></header>
       {activeNav === 'Home' && <><form className="composer" onSubmit={add}><Avatar initials={user.avatar} /><div className="composer-content"><textarea value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Write a short update..." maxLength="280" rows="2" /><div className="composer-footer"><MediaPicker onChange={setMedia} /><span>{draft.length}/280</span><button className="xp-button primary" disabled={!draft.trim() && !media}>Post</button></div>{media && <div className="media-selected">{media.name} <button type="button" onClick={() => setMedia(null)}>remove</button></div>}</div></form><div className="feed-tabs"><button className={tab === 'For you' ? 'selected' : ''} onClick={() => setTab('For you')}>For you</button><button className={tab === 'Following' ? 'selected' : ''} onClick={() => setTab('Following')}>Following</button></div><section className="posts">{posts.filter((post) => tab === 'For you' || post.userId === user.id || db.follows.some((follow) => follow.userId === user.id && follow.targetId === post.userId)).map((post) => <PostCard post={post} db={db} user={user} refresh={refresh} onProfile={(profile) => { setViewProfile(profile); setActiveNav('Profile') }} key={post.id} />)}</section></>}
-      {activeNav === 'Explore' && <section className="explore-view"><h2>Explore the network</h2><p className="muted">Search posts, people, and ideas from the twis community.</p><div className="explore-tags">{trends.map(([topic, count]) => <button key={topic} onClick={() => setQuery(topic)}>{topic}<small>{count}</small></button>)}</div><section className="posts">{posts.map((post) => <PostCard post={post} db={db} user={user} refresh={refresh} onProfile={(profile) => { setViewProfile(profile); setActiveNav('Profile') }} key={post.id} />)}</section></section>}
+      {activeNav === 'Explore' && <section className="explore-view"><h2>Explore the network</h2><p className="muted">Search posts, people, and ideas from the twis community.</p><section className="posts">{posts.map((post) => <PostCard post={post} db={db} user={user} refresh={refresh} onProfile={(profile) => { setViewProfile(profile); setActiveNav('Profile') }} key={post.id} />)}{!posts.length && <div className="empty-panel"><h2>No posts yet</h2><p>Be the first to share something with the community.</p></div>}</section></section>}
       {activeNav === 'Bookmarks' && <section className="posts">{db.posts.filter((post) => isBookmarked(post.id, user.id)).map((post) => <PostCard post={post} db={db} user={user} refresh={refresh} onProfile={(profile) => { setViewProfile(profile); setActiveNav('Profile') }} key={post.id} />)}{!db.posts.some((post) => isBookmarked(post.id, user.id)) && <div className="empty-panel"><h2>No bookmarks yet</h2><p>Save a post from your timeline to find it here.</p></div>}</section>}
       {activeNav === 'Messages' && <MessagesPanel db={db} user={user} refresh={refresh} />}
       {activeNav === 'Alerts' && <AlertsPanel db={db} user={user} refresh={refresh} />}
       {activeNav === 'Profile' && <ProfilePanel user={viewProfile || user} db={db} refresh={() => { setUser(getSessionUser()); refresh() }} />}
     </main>
-    <aside className="right-panel"><div className="panel window"><div className="titlebar"><span>users.exe</span><span>_ □ ×</span></div><div className="panel-content"><h2>People you may know</h2>{suggestions.map((person) => <div className="follow-row" key={person.id}><button className="profile-link" onClick={() => { setViewProfile(person); setActiveNav('Profile') }}><Avatar initials={person.avatar} /></button><span><b>{person.name}</b><small>@{person.handle}</small></span><button className="xp-button" onClick={() => { toggleFollow(person.id, user.id); refresh() }}>{isFollowing(person.id, user.id) ? 'Unfollow' : 'Follow'}</button></div>)}<h2 className="section-title">What's happening</h2>{trends.map(([topic, count]) => <button className="trend trend-button" key={topic} onClick={() => { setQuery(topic); setActiveNav('Explore') }}><b>{topic}</b><small>{count}</small></button>)}</div></div><div className="statusbar">READY · local database</div></aside>
   </div>
 }
 
